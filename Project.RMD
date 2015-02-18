@@ -1,24 +1,30 @@
 ---
 title: "Machine Learning Project"
-date: "Tuesday, February 17, 2015"
+date: "Tuesday, February 18, 2015"
 output: html_document
 ---
 The goal of this project is to predict the manner in which participants did the exercise. This is the "classe" variable in the training set.
-
-Begin by reading in the provided training dataset.
-```{r}
+```{r include=FALSE}
 library(caret)
 library(rattle)
 library(rpart)
 library(randomForest)
+```
+
+Begin by loading the libraries and reading the provided training dataset.
+```{r}
 train <- read.csv("data/pml-training.csv", header=TRUE, na.strings="NA")
 ```
+### Pre-Processing
+
 Pre-process by removing rows with new_window="yes" as well as empty and NA columns. 
 ```{r}
 train <- train[train$new_window!="yes",]
 train <- train[,c(8:11, 37:49, 60:68, 84:86, 102, 113:124, 140, 151:160)]
 dim(train)
 ```
+### Cross-Validation
+
 For cross-validation, split into training and testing
 ```{r}
 inTrain <- createDataPartition(y=train$classe, p=0.75, list=FALSE)
@@ -27,22 +33,33 @@ testing <- train[-inTrain,]
 dim(training)
 dim(testing)
 ```
+### Use Random Forest Model
+
 Since there are so many variables and it's difficult to pick one as the predictor, I use the random forest model on the training dataset.
 ```{r}
 rf <- randomForest(formula = classe ~ ., data = training, ntree = 500) 
 rf
 ```
+### Run Prediction on cross-validation dataset
+
 Run a prediction on the cross-validation testing dataset and show predicted results.
 ```{r}
 pred <- predict(rf, testing)
 table(pred, testing$classe)
 ```
-Calculate the predicted out of sample error rate
+
+### Calculate Out of Sample Error Rate
+
+Calculate the predicted out of sample error rate.
 ```{r}
 testing$predRight <- pred==testing$classe
-predictedOutOfSampleErrorRate <- table(testing$predRight)[1] / table(testing$predRight)[2] 
+predictedOutOfSampleErrorRate <- table(testing$predRight)[1] / length(testing$predRight)
 predictedOutOfSampleErrorRate
 ```
+The predicted out of sample error rate is `r predictedOutOfSampleErrorRate`.
+
+### Run Prediction on Testing Dataset
+
 Now read the testing dataset that was provided and pre-process exactly as was done for the training dataset.
 ```{r}
 testing <- read.csv("data/pml-testing.csv", header=TRUE, na.strings="NA")
@@ -55,12 +72,14 @@ testing$classe <- ""
 testing$classe <- factor(testing$classe)
 dim(testing)
 ```
-Run prediction on the testing dataset
+Run prediction on the testing dataset and show results.
 ```{r}
 pred <- predict(rf, testing)
 table(pred, testing$classe)
 ```
-Create the files to be submitted for submission
+### Create Files for Grading
+
+Create the files to be submitted for grading.
 ```{r}
 submitPred <- as.character(pred)
 n = length(submitPred)
